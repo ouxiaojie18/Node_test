@@ -1,0 +1,38 @@
+var querystring = require("querystring"),
+    dns = require("dns");
+
+exports.parseDns = function(res,req){
+    var postData="";
+    req.addListener("data",function(postDataChunk){
+        postData+=postDataChunk;
+    });
+    req.addListener("end",function(){
+        var retData = getDns(postData,function(domain,addresses){
+            res.writeHead(200,{'Content-Type':'text/html'});
+            res.end(`
+            <html>
+                <head>
+                    <meta http-equiv="content-type" content="text/html;charset=utf-8">
+                </head>
+                <body>
+                <div style='text-align: center'>
+                    Domain:<span style='color:red'>${domain}</span>
+                    IP:<span style='color:red'>${addresses.join(',')}</span>
+                </div>
+                </body>
+            </html>
+            `)
+        });
+        return;
+    })
+}
+
+function getDns(postData,callback){
+    var domain = querystring.parse(postData).search_dns;//应用querystring模块来获取post数据中键值为search_dns的值
+    dns.resolve(domain,function(err,addresses){
+        if(!addresses){
+            addresses=['不存在域名']
+        }
+        callback(domain,addresses);
+    });
+}
